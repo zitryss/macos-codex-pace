@@ -53,6 +53,11 @@ final class PaceAppDelegate: NSObject, NSApplicationDelegate {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.togglePopover() }
     }
   }
+  func application(_ application: NSApplication, open urls: [URL]) {
+    guard urls.contains(where: { $0.scheme == "codex-pace" && $0.host == "open" }) else { return }
+    model.refreshIfStale()
+    if !popover.isShown { togglePopover() }
+  }
   @objc private func togglePopover() {
     guard let button = item?.button else { return }
     if popover.isShown {
@@ -87,128 +92,134 @@ struct PacePanel: View {
   var showSettings: () -> Void
   @State private var selectedDay: CalendarDay?
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 18) {
-        HStack {
-          Label("Codex Pace", systemImage: "gauge.with.dots.needle.50percent").font(.headline)
-          Spacer()
-          if model.preview { Text("Preview").font(.caption).foregroundStyle(.secondary) }
-          Button(action: showSettings) { Image(systemName: "gearshape") }.buttonStyle(.plain).help(
-            "Settings")
-        }
-        if let snapshot = model.snapshot, let pace = model.projection {
-          VStack(spacing: 12) {
-            meter(
-              "Today's allowance left", value: pace.dailyPercent,
-              tint: allowanceColor(pace.dailyPercent)
-            )
-            .help(
-              pace.standardPlan
-                ? "Compared with a standard daily allocation. Can exceed 100% when you have extra headroom."
-                : "Compared with the balance sampled near this bucket's opening. Timing is approximate."
-            )
-            resetMeter("Bucket resets in", end: pace.end, duration: 86400, label: model.countdown)
-            meter(
-              "Weekly allowance left", value: pace.weeklyPercent,
-              tint: allowanceColor(pace.weeklyPercent))
-            resetMeter(
-              "Weekly resets in", end: snapshot.reset, duration: 604800,
-              label: model.weeklyCountdown)
-          }
-          HStack(spacing: 4) {
-            Text("Plan \(Pacing.whole(pace.records[pace.index].plan))")
-            Text("·").foregroundStyle(.tertiary)
-            Text("Used \(Pacing.whole(pace.records[pace.index].used))*")
-            Spacer()
-          }.font(.caption).monospacedDigit()
-          Divider()
-          calendar(snapshot, pace)
-          if let day = selectedDay {
-            HStack(alignment: .top) {
-              Text(dayDetails(day, snapshot)).font(.caption).foregroundStyle(.secondary).fixedSize(
-                horizontal: false, vertical: true)
-              Spacer(minLength: 0)
-              Button {
-                selectedDay = nil
-              } label: {
-                Image(systemName: "xmark")
-              }.buttonStyle(.plain).accessibilityLabel("Close day details")
-            }
-          }
-          if pace.correction { notice("Provider balance corrected; usage estimates may change.") }
-          if snapshot.shortLimitReached {
-            notice("Your shorter Codex limit is reached. Weekly headroom is still shown.")
-          }
-          if model.stale { notice("Showing an older reading. Refresh to check your balance.") }
-          HStack {
-            Label("Resets available", systemImage: "arrow.counterclockwise.circle")
-            Spacer()
-            Text(snapshot.resetCredits.map(String.init) ?? "—").monospacedDigit()
-          }.font(.caption).foregroundStyle(.secondary)
-        } else if model.options.count > 1 && model.selected.isEmpty {
-          VStack(alignment: .leading, spacing: 10) {
-            Text("Choose your quota").font(.title3.weight(.semibold))
-            Text(
-              "Your account has more than one weekly quota. This choice won't change your model."
-            ).foregroundStyle(.secondary)
-            ForEach(model.options) { option in
-              Button {
-                model.choose(option.id)
-              } label: {
-                HStack {
-                  Text(option.name)
-                  Spacer()
-                  Text("\(Pacing.whole(option.snapshot.remaining))% left")
-                }
-              }.buttonStyle(.bordered)
-            }
-          }
-        } else {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(
-              model.refreshing
-                ? "Connecting to Codex…"
-                : model.snapshot == nil ? "Your week, at a steady pace." : "Weekly reset reached"
-            ).font(.title3.weight(.semibold))
-            Text(
-              model.snapshot == nil
-                ? "Codex Pace uses your existing Codex CLI sign-in to show how much you can spend each day."
-                : "Checking the next quota window. Unused balance from the old week has expired."
-            )
-            .font(.callout).foregroundStyle(.secondary)
-            if model.refreshing { ProgressView().controlSize(.small) }
-          }.padding(.vertical, 12)
-        }
-        if let error = model.error { notice(error) }
-        if let error = model.storageError { notice(error) }
-        Divider()
-        HStack {
-          Text(model.age).font(.caption).foregroundStyle(.secondary)
-          Spacer()
-          Button {
-            model.refresh()
-          } label: {
-            Image(systemName: "arrow.triangle.2.circlepath")
-          }
-          .buttonStyle(.plain).disabled(model.refreshing || model.preview).help(
-            "Refresh quota (⌘R)"
-          )
-          .keyboardShortcut("r").accessibilityLabel(
-            model.refreshing ? "Refreshing quota" : "Refresh quota")
-          Menu {
-            Button("Settings…", action: showSettings)
-            Divider()
-            Button("Quit Codex Pace") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
-          } label: {
-            Image(systemName: "ellipsis.circle")
-          }
-          .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("More")
-        }
-      }
-      .padding(20).frame(width: 370)
+    ViewThatFits(in: .vertical) {
+      panelContent.fixedSize(horizontal: false, vertical: true)
+      ScrollView { panelContent }
+        .scrollBounceBehavior(.basedOnSize)
     }
-    .frame(width: 370, height: 710)
+    .frame(width: 370, height: 710, alignment: .top)
     .onAppear { model.refreshIfStale() }
+  }
+  private var panelContent: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      HStack {
+        Label("Codex Pace", systemImage: "gauge.with.dots.needle.50percent").font(.headline)
+        Spacer()
+        if model.preview { Text("Preview").font(.caption).foregroundStyle(.secondary) }
+        Button(action: showSettings) { Image(systemName: "gearshape") }.buttonStyle(.plain).help(
+          "Settings")
+      }
+      if let snapshot = model.snapshot, let pace = model.projection {
+        VStack(spacing: 12) {
+          meter(
+            "Today's allowance left", value: pace.dailyPercent,
+            tint: allowanceColor(pace.dailyPercent)
+          )
+          .help(
+            pace.standardPlan
+              ? "Compared with a standard daily allocation. Can exceed 100% when you have extra headroom."
+              : "Compared with the balance sampled near this bucket's opening. Timing is approximate."
+          )
+          resetMeter("Bucket resets in", end: pace.end, duration: 86400, label: model.countdown)
+          meter(
+            "Weekly allowance left", value: pace.weeklyPercent,
+            tint: allowanceColor(pace.weeklyPercent))
+          resetMeter(
+            "Weekly resets in", end: snapshot.reset, duration: 604800,
+            label: model.weeklyCountdown)
+        }
+        HStack(spacing: 4) {
+          Text("Plan \(Pacing.whole(pace.records[pace.index].plan))")
+          Text("·").foregroundStyle(.tertiary)
+          Text("Used \(Pacing.whole(pace.records[pace.index].used))*")
+          Spacer()
+        }.font(.caption).monospacedDigit()
+        Divider()
+        calendar(snapshot, pace)
+        if let day = selectedDay {
+          HStack(alignment: .top) {
+            Text(dayDetails(day, snapshot)).font(.caption).foregroundStyle(.secondary).fixedSize(
+              horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button {
+              selectedDay = nil
+            } label: {
+              Image(systemName: "xmark")
+            }.buttonStyle(.plain).accessibilityLabel("Close day details")
+          }
+        }
+        if pace.correction { notice("Provider balance corrected; usage estimates may change.") }
+        if snapshot.shortLimitReached {
+          notice("Your shorter Codex limit is reached. Weekly headroom is still shown.")
+        }
+        if model.stale { notice("Showing an older reading. Refresh to check your balance.") }
+        HStack {
+          Label("Resets available", systemImage: "arrow.counterclockwise.circle")
+          Spacer()
+          Text(snapshot.resetCredits.map(String.init) ?? "—").monospacedDigit()
+        }.font(.caption).foregroundStyle(.secondary)
+      } else if model.options.count > 1 && model.selected.isEmpty {
+        VStack(alignment: .leading, spacing: 10) {
+          Text("Choose your quota").font(.title3.weight(.semibold))
+          Text(
+            "Your account has more than one weekly quota. This choice won't change your model."
+          ).foregroundStyle(.secondary)
+          ForEach(model.options) { option in
+            Button {
+              model.choose(option.id)
+            } label: {
+              HStack {
+                Text(option.name)
+                Spacer()
+                Text("\(Pacing.whole(option.snapshot.remaining))% left")
+              }
+            }.buttonStyle(.bordered)
+          }
+        }
+      } else {
+        VStack(alignment: .leading, spacing: 8) {
+          Text(
+            model.refreshing
+              ? "Connecting to Codex…"
+              : model.snapshot == nil ? "Your week, at a steady pace." : "Weekly reset reached"
+          ).font(.title3.weight(.semibold))
+          Text(
+            model.snapshot == nil
+              ? "Codex Pace uses your existing Codex CLI sign-in to show how much you can spend each day."
+              : "Checking the next quota window. Unused balance from the old week has expired."
+          )
+          .font(.callout).foregroundStyle(.secondary)
+          if model.refreshing { ProgressView().controlSize(.small) }
+        }.padding(.vertical, 12)
+      }
+      if let error = model.error { notice(error) }
+      if let error = model.storageError { notice(error) }
+      if let error = model.widgetError { notice(error) }
+      Divider()
+      HStack {
+        Text(model.age).font(.caption).foregroundStyle(.secondary)
+        Spacer()
+        Button {
+          model.refresh()
+        } label: {
+          Image(systemName: "arrow.triangle.2.circlepath")
+        }
+        .buttonStyle(.plain).disabled(model.refreshing || model.preview).help(
+          "Refresh quota (⌘R)"
+        )
+        .keyboardShortcut("r").accessibilityLabel(
+          model.refreshing ? "Refreshing quota" : "Refresh quota")
+        Menu {
+          Button("Settings…", action: showSettings)
+          Divider()
+          Button("Quit Codex Pace") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
+        } label: {
+          Image(systemName: "ellipsis.circle")
+        }
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help("More")
+      }
+    }
+    .padding(20).frame(width: 370)
   }
   private func allowanceColor(_ value: Double?) -> Color {
     blend(.systemRed, .systemGreen, fraction: (value ?? 0) / 100)

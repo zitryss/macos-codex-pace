@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WidgetKit
 
 #if canImport(PaceCore)
   import PaceCore
@@ -14,6 +15,7 @@ final class PaceModel: ObservableObject {
   @Published var refreshing = false
   @Published var error: String?
   @Published var storageError: String?
+  @Published var widgetError: String?
   @Published var selected: String {
     didSet { UserDefaults.standard.set(selected, forKey: "quotaBucket") }
   }
@@ -102,6 +104,7 @@ final class PaceModel: ObservableObject {
   }
   func choose(_ bucket: String) {
     selected = bucket
+    publishWidget(nil)
     guard let option = options.first(where: { $0.id == bucket }) else { return }
     accept(option.snapshot)
   }
@@ -126,6 +129,7 @@ final class PaceModel: ObservableObject {
           accept(chosen.snapshot)
         } else {
           snapshot = nil
+          publishWidget(nil)
           if !selected.isEmpty {
             error = "The selected quota is unavailable. Choose a quota in Settings."
           }
@@ -142,6 +146,16 @@ final class PaceModel: ObservableObject {
       refreshing = false
     }
   }
+  private func publishWidget(_ reading: WidgetReading?) {
+    guard !preview else { return }
+    do {
+      try WidgetReadingStore.write(reading)
+      widgetError = nil
+      WidgetCenter.shared.reloadAllTimelines()
+    } catch {
+      widgetError = "Widgets could not be updated. Try refreshing the quota."
+    }
+  }
   private func accept(_ value: QuotaSnapshot) {
     guard
       snapshot == nil || value.received >= snapshot!.received || value.bucket != snapshot!.bucket
@@ -149,6 +163,10 @@ final class PaceModel: ObservableObject {
     snapshot = value
     now = Date()
     lastIndex = value.index(at: now)
+    publishWidget(
+      Pacing.project(value, history: history + [value], now: now).map {
+        WidgetReading(projection: $0, snapshot: value)
+      })
     if !history.contains(where: { $0.identity == value.identity && $0.received == value.received })
     {
       history.append(value)
