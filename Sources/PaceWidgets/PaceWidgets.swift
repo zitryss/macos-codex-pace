@@ -1,25 +1,25 @@
 import SwiftUI
 import WidgetKit
 
-struct AllowanceEntry: TimelineEntry {
+struct QuotaEntry: TimelineEntry {
   let date: Date
   let reading: WidgetReading?
 }
 
-struct AllowanceProvider: TimelineProvider {
-  func placeholder(in context: Context) -> AllowanceEntry {
+struct QuotaProvider: TimelineProvider {
+  func placeholder(in context: Context) -> QuotaEntry {
     let now = Date()
     let snapshot = QuotaSnapshot(
       account: "preview", bucket: "preview", remaining: 84,
       reset: now.addingTimeInterval(5 * 86400 + 21600), received: now)
     let projection = Pacing.project(snapshot, history: [], now: now)!
-    return AllowanceEntry(
+    return QuotaEntry(
       date: now, reading: WidgetReading(projection: projection, snapshot: snapshot))
   }
-  func getSnapshot(in context: Context, completion: @escaping (AllowanceEntry) -> Void) {
+  func getSnapshot(in context: Context, completion: @escaping (QuotaEntry) -> Void) {
     completion(context.isPreview ? placeholder(in: context) : entry(at: Date()))
   }
-  func getTimeline(in context: Context, completion: @escaping (Timeline<AllowanceEntry>) -> Void) {
+  func getTimeline(in context: Context, completion: @escaping (Timeline<QuotaEntry>) -> Void) {
     let now = Date()
     let reading = try? WidgetReadingStore.read()
     var dates = (0...60).map { now.addingTimeInterval(Double($0) * 60) }
@@ -29,11 +29,11 @@ struct AllowanceProvider: TimelineProvider {
         $0 > now
       }
     }
-    let entries = Set(dates).sorted().map { AllowanceEntry(date: $0, reading: reading) }
+    let entries = Set(dates).sorted().map { QuotaEntry(date: $0, reading: reading) }
     completion(Timeline(entries: entries, policy: .after(now.addingTimeInterval(300))))
   }
-  private func entry(at date: Date) -> AllowanceEntry {
-    AllowanceEntry(date: date, reading: try? WidgetReadingStore.read())
+  private func entry(at date: Date) -> QuotaEntry {
+    QuotaEntry(date: date, reading: try? WidgetReadingStore.read())
   }
 }
 
@@ -84,13 +84,13 @@ struct Speedometer: View {
   }
 }
 
-struct AllowanceWidgetView: View {
-  let entry: AllowanceEntry
+struct QuotaWidgetView: View {
+  let entry: QuotaEntry
   let weekly: Bool
   var body: some View {
     let value = entry.reading?.percent(weekly: weekly, at: entry.date)
     VStack(spacing: 4) {
-      Text(weekly ? "Weekly allowance" : "Today's allowance").font(.caption.weight(.semibold))
+      Text(weekly ? "Weekly quota" : "Today's quota").font(.caption.weight(.semibold))
       Speedometer(value: value).frame(height: 66)
       Text(value.map { "\(Pacing.whole($0))%" } ?? "—")
         .font(.system(.title3, design: .rounded).weight(.semibold)).monospacedDigit()
@@ -116,24 +116,24 @@ struct AllowanceWidgetView: View {
   }
 }
 
-struct DailyAllowanceWidget: Widget {
+struct DailyQuotaWidget: Widget {
   let kind = "CodexPaceDaily"
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: kind, provider: AllowanceProvider()) {
-      AllowanceWidgetView(entry: $0, weekly: false)
+    StaticConfiguration(kind: kind, provider: QuotaProvider()) {
+      QuotaWidgetView(entry: $0, weekly: false)
     }
-    .configurationDisplayName("Daily Allowance")
-    .description("Your daily pacing allowance and time until the next bucket reset.")
+    .configurationDisplayName("Daily Quota")
+    .description("Your daily pacing quota and time until the next bucket reset.")
     .supportedFamilies([.systemSmall])
   }
 }
-struct WeeklyAllowanceWidget: Widget {
+struct WeeklyQuotaWidget: Widget {
   let kind = "CodexPaceWeekly"
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: kind, provider: AllowanceProvider()) {
-      AllowanceWidgetView(entry: $0, weekly: true)
+    StaticConfiguration(kind: kind, provider: QuotaProvider()) {
+      QuotaWidgetView(entry: $0, weekly: true)
     }
-    .configurationDisplayName("Weekly Allowance")
+    .configurationDisplayName("Weekly Quota")
     .description("Your remaining weekly quota and time until the weekly reset.")
     .supportedFamilies([.systemSmall])
   }
@@ -141,7 +141,7 @@ struct WeeklyAllowanceWidget: Widget {
 @main
 struct PaceWidgets: WidgetBundle {
   var body: some Widget {
-    DailyAllowanceWidget()
-    WeeklyAllowanceWidget()
+    DailyQuotaWidget()
+    WeeklyQuotaWidget()
   }
 }

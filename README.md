@@ -4,15 +4,15 @@
 
 A native macOS menu bar app for keeping a steady pace of AI usage. See how much of your weekly quota you can spend today without eating into the days ahead.
 
-Your week is divided into seven equal, 24-hour planning buckets. Spend less and the surplus is available in the next bucket; spend more and the next allowance shrinks. Buckets follow your provider's reset time, not midnight. Unused quota expires at the weekly reset.
+Your week is divided into seven equal, 24-hour planning buckets. Spend less and the surplus is available in the next bucket; spend more and the next quota shrinks. Buckets follow your provider's reset time, not midnight. Unused quota expires at the weekly reset.
 
 ![Codex Pace menu bar app](https://raw.githubusercontent.com/zitryss/macos-codex-pace/dd1ba2d83d923da53bcc703fe3f3deff64787773/docs/screenshots/codex-pace-1.1.0.png)
 
 ## Use it
 
-Click the gauge in the menu bar. Four bars show today's allowance, time until the next bucket, weekly allowance, and time until the weekly reset. Balance bars turn from green toward red as you spend. Countdown bars shrink from gray toward green as a fresh allowance approaches. The time remaining appears beside each countdown.
+Click the gauge in the menu bar. Four bars show today's quota, time until the next bucket, weekly quota, and time until the weekly reset. Balance bars turn from green toward red as you spend. Countdown bars shrink from gray toward green as a fresh quota approaches. The time remaining appears beside each countdown.
 
-Today's allowance includes surplus or overspending from earlier buckets. It can exceed 100% when you have extra headroom.
+Today's quota includes surplus or overspending from earlier buckets. It can exceed 100% when you have extra headroom.
 
 The month calendar highlights the dates your week touches—usually eight dates for seven buckets. Stronger blue marks the current bucket, and an outline marks today's calendar date. Click a day for its range and calculation basis. P is Plan; U is Used. Asterisks mean estimated usage, not exact daily consumption.
 

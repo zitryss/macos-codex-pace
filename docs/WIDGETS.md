@@ -1,6 +1,6 @@
 # Widgets
 
-The app embeds one WidgetKit extension with two small widgets: Daily Allowance and Weekly Allowance. Add either from macOS **Edit Widgets → Codex Pace**. Both use a semicircular 0–100 speedometer, a numeric percentage, and a reset countdown. Carryover can make the daily number exceed 100%; the needle stops at 100 without changing the underlying allowance.
+The app embeds one WidgetKit extension with two small widgets: Daily Quota and Weekly Quota. Add either from macOS **Edit Widgets → Codex Pace**. Both use a semicircular 0–100 speedometer, a numeric percentage, and a reset countdown. Carryover can make the daily number exceed 100%; the needle stops at 100 without changing the underlying quota.
 
 Keep Codex Pace running to collect quota updates. Clicking a widget opens the app. WidgetKit schedules rendering and refreshes, so updates may lag the menu bar. A reading older than ten minutes is labelled; an expired bucket/week displays no balance until a new reading arrives. Preview values appear only in the widget gallery and placeholder. They are never saved as real readings.
 

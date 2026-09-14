@@ -112,8 +112,8 @@ struct PacePanel: View {
       if let snapshot = model.snapshot, let pace = model.projection {
         VStack(spacing: 12) {
           meter(
-            "Today's allowance left", value: pace.dailyPercent,
-            tint: allowanceColor(pace.dailyPercent)
+            "Today's quota left", value: pace.dailyPercent,
+            tint: quotaColor(pace.dailyPercent)
           )
           .help(
             pace.standardPlan
@@ -122,8 +122,8 @@ struct PacePanel: View {
           )
           resetMeter("Bucket resets in", end: pace.end, duration: 86400, label: model.countdown)
           meter(
-            "Weekly allowance left", value: pace.weeklyPercent,
-            tint: allowanceColor(pace.weeklyPercent))
+            "Weekly quota left", value: pace.weeklyPercent,
+            tint: quotaColor(pace.weeklyPercent))
           resetMeter(
             "Weekly resets in", end: snapshot.reset, duration: 604800,
             label: model.weeklyCountdown)
@@ -221,7 +221,7 @@ struct PacePanel: View {
     }
     .padding(20).frame(width: 370)
   }
-  private func allowanceColor(_ value: Double?) -> Color {
+  private func quotaColor(_ value: Double?) -> Color {
     blend(.systemRed, .systemGreen, fraction: (value ?? 0) / 100)
   }
   private func blend(_ start: NSColor, _ end: NSColor, fraction: Double) -> Color {
@@ -352,7 +352,7 @@ struct PaceSettings: View {
       }
       Section("About your pace") {
         Text(
-          "Your weekly quota is split into seven equal 24-hour buckets. Unused allowance carries forward within the week; overspending leaves less for the next bucket."
+          "Your weekly quota is split into seven equal 24-hour buckets. Unused quota carries forward within the week; overspending leaves less for the next bucket."
         )
         Text(
           "The calendar highlights all dates touched by the week—usually eight. An asterisk marks estimated usage. Values use whole percentages; fractions are kept in the calculation."
