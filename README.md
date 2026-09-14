@@ -6,6 +6,10 @@ A native macOS menu bar app for keeping a steady pace of AI usage. See how much 
 
 Your week is divided into seven equal, 24-hour planning buckets. Spend less and the surplus is available in the next bucket; spend more and the next allowance shrinks. Buckets follow your provider's reset time, not midnight. Unused quota expires at the weekly reset.
 
+![Codex Pace menu bar app](https://raw.githubusercontent.com/zitryss/macos-codex-pace/e230ab59b95aff28a52df6a6c8bd41945d4e1ece/docs/screenshots/codex-pace-1.0.1.png)
+
+[Screenshot discussion](https://github.com/zitryss/macos-codex-pace/issues/1)
+
 ## Use it
 
 Click the gauge in the menu bar. The large percentage is your available daily headroom, expressed as a share of the weekly quota. The two progress bars show your daily and weekly balances. Daily headroom can exceed 100% of a standard day's allocation.
