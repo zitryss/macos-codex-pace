@@ -14,6 +14,10 @@ The month calendar highlights the dates your week touches—usually eight dates 
 
 Readings refresh every five minutes, on wake, and at bucket boundaries. Use the refresh button or ⌘R to check now. Settings lets you choose the weekly quota and, if necessary, locate your Codex CLI. Reset credits are displayed only.
 
+## Download
+
+Get the universal Mac app (Apple silicon and Intel) from [GitHub Releases](https://github.com/zitryss/macos-codex-pace/releases/latest). Unzip it and move **Codex Pace.app** to Applications. Requires macOS 14 or later and a signed-in Codex CLI.
+
 ## Build and run
 
 Requires macOS 14 or later, Xcode, and a Codex CLI already signed in with your subscription (`codex login`). No API key is needed.
@@ -28,7 +32,7 @@ Or build from Terminal:
 ./scripts/build.sh
 ```
 
-The app is built at `build/Build/Products/Debug/Codex Pace.app`. You can copy it to Applications. This source build is locally signed, not notarized for distribution.
+The app is built at `.build/xcode/Build/Products/Release/Codex Pace.app`. You can copy it to Applications. The build is locally signed (ad-hoc), not Apple Developer ID signed or notarized. macOS may block a downloaded copy until you approve it in System Settings → Privacy & Security. You can also build from source.
 
 ## Private by design
 

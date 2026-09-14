@@ -9,3 +9,10 @@
 - No model turns or reset-credit redemptions were used.
 
 Limitations: near-boundary sampling, 90-day retention and background scheduling are implemented but have not been observed over a full live quota week. Intel was compiled, not executed. Distribution notarization, launch-at-login and automatic app updates are outside this initial source release.
+
+## Release 1.0.1
+
+- Universal optimized Release build, embedded app icon, and strict code-signature verification passed.
+- Installed release replaces the debug copy in `~/Applications`; the two extra debug bundles were unregistered and moved to Trash.
+- Captured the actual installed menu bar popover for the README and screenshot issue.
+- No Developer ID signing identity is installed. The download is explicitly labeled ad-hoc signed and not notarized.

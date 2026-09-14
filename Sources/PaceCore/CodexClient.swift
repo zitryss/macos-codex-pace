@@ -95,7 +95,7 @@ public enum CodexClient {
     defer { rpc.close() }
     _ = try rpc.request(
       id: 1, method: "initialize",
-      params: ["clientInfo": ["name": "macos_codex_pace", "version": "1.0.0"]])
+      params: ["clientInfo": ["name": "macos_codex_pace", "version": "1.0.1"]])
     try rpc.send(["method": "initialized", "params": [:]])
     let account = try rpc.request(id: 2, method: "account/read")["account"] as? [String: Any] ?? [:]
     let requested = Date()
