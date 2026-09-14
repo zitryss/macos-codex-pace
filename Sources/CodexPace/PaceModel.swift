@@ -44,9 +44,10 @@ final class PaceModel: ObservableObject {
   var weeklyCountdown: String {
     guard let reset = snapshot?.reset else { return "—" }
     let minutes = max(0, Int(reset.timeIntervalSince(now) / 60))
+    if minutes == 0 { return "<1m" }
     if minutes < 60 { return "\(minutes)m" }
     if minutes < 1440 { return "\(minutes / 60)h \(minutes % 60)m" }
-    return "\(minutes / 1440)d \((minutes % 1440) / 60)h"
+    return "\(minutes / 1440)d \((minutes % 1440) / 60)h \(minutes % 60)m"
   }
   var countdown: String {
     guard let end = projection?.end else { return "—" }

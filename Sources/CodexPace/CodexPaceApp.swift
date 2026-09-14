@@ -97,23 +97,29 @@ struct PacePanel: View {
             "Settings")
         }
         if let snapshot = model.snapshot, let pace = model.projection {
-          summary(pace)
           VStack(spacing: 12) {
-            meter("Today's allowance left", value: pace.dailyPercent, tint: .accentColor)
-              .help(
-                pace.standardPlan
-                  ? "Compared with a standard daily allocation. Can exceed 100% when you have extra headroom."
-                  : "Compared with the balance sampled near this bucket's opening. Timing is approximate."
-              )
-            meter("Weekly allowance left", value: pace.weeklyPercent, tint: .secondary)
+            meter(
+              "Today's allowance left", value: pace.dailyPercent,
+              tint: allowanceColor(pace.dailyPercent)
+            )
+            .help(
+              pace.standardPlan
+                ? "Compared with a standard daily allocation. Can exceed 100% when you have extra headroom."
+                : "Compared with the balance sampled near this bucket's opening. Timing is approximate."
+            )
+            resetMeter("Bucket resets in", end: pace.end, duration: 86400, label: model.countdown)
+            meter(
+              "Weekly allowance left", value: pace.weeklyPercent,
+              tint: allowanceColor(pace.weeklyPercent))
+            resetMeter(
+              "Weekly resets in", end: snapshot.reset, duration: 604800,
+              label: model.weeklyCountdown)
           }
           HStack(spacing: 4) {
             Text("Plan \(Pacing.whole(pace.records[pace.index].plan))")
             Text("·").foregroundStyle(.tertiary)
             Text("Used \(Pacing.whole(pace.records[pace.index].used))*")
             Spacer()
-            Text(pace.standardPlan ? "Standard plan" : "Sampled opening").foregroundStyle(
-              .secondary)
           }.font(.caption).monospacedDigit()
           Divider()
           calendar(snapshot, pace)
@@ -204,35 +210,34 @@ struct PacePanel: View {
     .frame(width: 370, height: 710)
     .onAppear { model.refreshIfStale() }
   }
-  private func summary(_ pace: PaceProjection) -> some View {
-    VStack(alignment: .leading, spacing: 14) {
-      HStack(alignment: .firstTextBaseline, spacing: 7) {
-        Text("\(Pacing.whole(pace.available))%")
-          .font(.system(size: 42, weight: .semibold, design: .rounded)).monospacedDigit()
-        VStack(alignment: .leading, spacing: 2) {
-          Text("available today").font(.callout.weight(.medium))
-          Text("of your weekly quota").font(.caption).foregroundStyle(.secondary)
-        }
-      }
-      HStack {
-        Label("Bucket: \(model.countdown)", systemImage: "clock").monospacedDigit()
-          .help("Bucket resets in \(model.countdown)")
-        Spacer()
-        Text("Week: \(model.weeklyCountdown)").help(
-          "Weekly reset: \(model.snapshot!.reset.formatted(date: .abbreviated, time: .shortened))")
-      }.font(.caption).foregroundStyle(.secondary)
-    }
+  private func allowanceColor(_ value: Double?) -> Color {
+    blend(.systemRed, .systemGreen, fraction: (value ?? 0) / 100)
   }
-  private func meter(_ title: String, value: Double?, tint: Color) -> some View {
-    VStack(spacing: 5) {
+  private func blend(_ start: NSColor, _ end: NSColor, fraction: Double) -> Color {
+    Color(nsColor: start.blended(withFraction: min(1, max(0, fraction)), of: end) ?? start)
+  }
+  private func resetMeter(_ title: String, end: Date, duration: TimeInterval, label: String)
+    -> some View
+  {
+    let fraction = min(1, max(0, end.timeIntervalSince(model.now) / duration))
+    return meter(
+      title, value: fraction * 100,
+      tint: blend(.systemGreen, .systemGray, fraction: fraction), label: label
+    )
+    .help("Resets \(end.formatted(date: .abbreviated, time: .shortened))")
+  }
+  private func meter(_ title: String, value: Double?, tint: Color, label: String? = nil)
+    -> some View
+  {
+    let reading = label ?? (value == nil ? "—" : "\(Pacing.whole(value))%")
+    return VStack(spacing: 5) {
       HStack {
         Text(title)
         Spacer()
-        Text(value == nil ? "—" : "\(Pacing.whole(value))%").monospacedDigit()
+        Text(reading).monospacedDigit()
       }.font(.caption)
       ProgressView(value: min(100, max(0, value ?? 0)), total: 100).tint(tint)
-        .accessibilityLabel(title).accessibilityValue(
-          value.map { "\(Pacing.whole($0)) percent" } ?? "Unavailable")
+        .accessibilityLabel(title).accessibilityValue(reading)
     }
   }
   private func calendar(_ snapshot: QuotaSnapshot, _ pace: PaceProjection) -> some View {
@@ -288,7 +293,6 @@ struct PacePanel: View {
           "Standard-plan shortfalls and reconstructed history are estimates. Near-boundary samples improve timing but aren't exact provider measurements."
         )
         Spacer()
-        Text("Blue: bucket · Outline: today")
       }.font(.system(size: 10)).foregroundStyle(.secondary)
     }
   }

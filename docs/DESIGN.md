@@ -4,7 +4,7 @@
 
 The concept is quota pacing, not a Linux panel skin. The macOS version uses a compact, transient AppKit NSPopover anchored to an NSStatusItem, containing SwiftUI views. AppKit handles reliable status-item activation and first-launch discovery; SwiftUI supplies typography, buttons, progress views, menus, calendar layout and the settings form. The app is an accessory without a Dock icon.
 
-Apple's menu bar guidance favors a menu unless functionality is too complex. This calendar and pair of balances justify a popover. The highest-value number gets a clear visual hierarchy, instead of three equally large columns. Settings and Quit use familiar controls; details are disclosed by clicking a date. System colors adapt to the current appearance. The menu bar uses an SF Symbol and an accessibility description.
+Apple's menu bar guidance favors a menu unless functionality is too complex. This calendar and pair of balances justify a popover. Four stacked bars pair each allowance with its reset countdown. Allowances blend from green to red as they decrease; countdowns blend from gray to green as their remaining time decreases. Percentages and duration labels keep the information readable without relying on color. Settings and Quit use familiar controls; details are disclosed by clicking a date. System colors adapt to the current appearance. The menu bar uses an SF Symbol and an accessibility description.
 
 Sources reviewed September 14, 2026:
 
