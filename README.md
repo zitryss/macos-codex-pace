@@ -6,7 +6,7 @@ A native macOS menu bar app for keeping a steady pace of AI usage. See how much 
 
 Your week is divided into seven equal, 24-hour planning buckets. Spend less and the surplus is available in the next bucket; spend more and the next allowance shrinks. Buckets follow your provider's reset time, not midnight. Unused quota expires at the weekly reset.
 
-![Codex Pace menu bar app](https://raw.githubusercontent.com/zitryss/macos-codex-pace/e230ab59b95aff28a52df6a6c8bd41945d4e1ece/docs/screenshots/codex-pace-1.0.1.png)
+![Codex Pace menu bar app](https://raw.githubusercontent.com/zitryss/macos-codex-pace/dd1ba2d83d923da53bcc703fe3f3deff64787773/docs/screenshots/codex-pace-1.1.0.png)
 
 ## Use it
 
