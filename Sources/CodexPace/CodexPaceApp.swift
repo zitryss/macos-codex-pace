@@ -34,11 +34,11 @@ final class PaceAppDelegate: NSObject, NSApplicationDelegate {
       rootView: PacePanel(model: model, showSettings: { [weak self] in self?.openSettings() }))
     panel.sizingOptions = []
     popover.contentViewController = panel
-    popover.contentSize = NSSize(width: 370, height: 710)
+    popover.contentSize = NSSize(width: 370, height: 340)
     // Make the status item discoverable on a manual app launch. No login item is installed.
     if inspecting {
       let window = NSWindow(
-        contentRect: NSRect(x: 0, y: 0, width: 370, height: 710), styleMask: [.titled, .closable],
+        contentRect: NSRect(x: 0, y: 0, width: 370, height: 340), styleMask: [.titled, .closable],
         backing: .buffered, defer: false)
       window.title = "Codex Pace — Inspection"
       let content = NSHostingController(
@@ -90,14 +90,13 @@ final class PaceAppDelegate: NSObject, NSApplicationDelegate {
 struct PacePanel: View {
   @ObservedObject var model: PaceModel
   var showSettings: () -> Void
-  @State private var selectedDay: CalendarDay?
   var body: some View {
     ViewThatFits(in: .vertical) {
       panelContent.fixedSize(horizontal: false, vertical: true)
       ScrollView { panelContent }
         .scrollBounceBehavior(.basedOnSize)
     }
-    .frame(width: 370, height: 710, alignment: .top)
+    .frame(width: 370, height: 340, alignment: .top)
     .onAppear { model.refreshIfStale() }
   }
   private var panelContent: some View {
@@ -128,27 +127,7 @@ struct PacePanel: View {
             "Weekly resets in", end: snapshot.reset, duration: 604800,
             label: model.weeklyCountdown)
         }
-        HStack(spacing: 4) {
-          Text("Plan \(Pacing.whole(pace.records[pace.index].plan))")
-          Text("·").foregroundStyle(.tertiary)
-          Text("Used \(Pacing.whole(pace.records[pace.index].used))*")
-          Spacer()
-        }.font(.caption).monospacedDigit()
-        Divider()
-        calendar(snapshot, pace)
-        if let day = selectedDay {
-          HStack(alignment: .top) {
-            Text(dayDetails(day, snapshot)).font(.caption).foregroundStyle(.secondary).fixedSize(
-              horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            Button {
-              selectedDay = nil
-            } label: {
-              Image(systemName: "xmark")
-            }.buttonStyle(.plain).accessibilityLabel("Close day details")
-          }
-        }
-        if pace.correction { notice("Provider balance corrected; usage estimates may change.") }
+        if pace.correction { notice("Provider balance corrected; your quota may change.") }
         if snapshot.shortLimitReached {
           notice("Your shorter Codex limit is reached. Weekly headroom is still shown.")
         }
@@ -251,77 +230,6 @@ struct PacePanel: View {
         .accessibilityLabel(title).accessibilityValue(reading)
     }
   }
-  private func calendar(_ snapshot: QuotaSnapshot, _ pace: PaceProjection) -> some View {
-    let days = PaceCalendar.days(snapshot: snapshot, projection: pace, now: model.now)
-    return VStack(spacing: 8) {
-      HStack {
-        Text(model.now.formatted(.dateTime.month(.wide).year())).font(
-          .subheadline.weight(.semibold))
-        Spacer()
-        Text("P plan · U used*").font(.caption2).foregroundStyle(.secondary)
-      }
-      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 2)
-      {
-        ForEach(["M", "T", "W", "T", "F", "S", "S"].indices, id: \.self) { i in
-          Text(["M", "T", "W", "T", "F", "S", "S"][i]).font(.caption2).foregroundStyle(.secondary)
-            .frame(height: 20)
-        }
-        ForEach(days) { day in
-          Button {
-            selectedDay = selectedDay?.id == day.id ? nil : day
-          } label: {
-            VStack(spacing: 3) {
-              Text(String(day.number)).font(
-                .system(.caption, design: .rounded).weight(day.today ? .bold : .medium))
-              if let record = day.records.first {
-                Text("P \(Pacing.whole(record.plan))").font(.system(size: 11))
-                Text(record.used == nil ? "U —" : "U \(Pacing.whole(record.used))*").font(
-                  .system(size: 11))
-              } else {
-                Text(" ").font(.system(size: 11))
-                Text(" ").font(.system(size: 11))
-              }
-            }.monospacedDigit().frame(maxWidth: .infinity).frame(height: 46)
-              .foregroundStyle(day.inMonth ? Color.primary : Color.secondary)
-              .background(
-                day.inBucket
-                  ? Color.accentColor.opacity(0.22)
-                  : day.inWeek ? Color.accentColor.opacity(0.08) : Color.clear
-              )
-              .overlay {
-                if day.today {
-                  RoundedRectangle(cornerRadius: 5).strokeBorder(
-                    Color.red.opacity(0.75), lineWidth: 2)
-                }
-              }
-              .contentShape(Rectangle())
-          }.buttonStyle(.plain).help(dayDetails(day, snapshot))
-            .accessibilityLabel(dayDetails(day, snapshot))
-        }
-      }
-      HStack(spacing: 4) {
-        Text("* Estimated usage").help(
-          "Standard-plan shortfalls and reconstructed history are estimates. Near-boundary samples improve timing but aren't exact provider measurements."
-        )
-        Spacer()
-      }.font(.system(size: 10)).foregroundStyle(.secondary)
-    }
-  }
-  private func dayDetails(_ day: CalendarDay, _ snapshot: QuotaSnapshot) -> String {
-    var text = day.date.formatted(date: .complete, time: .omitted)
-    for record in day.records {
-      text +=
-        "\n\(snapshot.boundary(record.index).formatted(date: .abbreviated, time: .shortened)) – \(snapshot.boundary(record.index + 1).formatted(date: .abbreviated, time: .shortened))"
-      text +=
-        record.sampled
-        ? "\nPlan uses a sample within 60 seconds of opening; usage is approximate."
-        : "\nStandard daily plan. Used is a pacing estimate, not a measured daily total."
-    }
-    if day.inWeek && day.records.isEmpty {
-      text += "\nThe quota week overlaps this date; no new bucket starts here."
-    }
-    return text
-  }
   private func notice(_ text: String) -> some View {
     Label(text, systemImage: "info.circle").font(.caption).foregroundStyle(.secondary).fixedSize(
       horizontal: false, vertical: true)
@@ -355,7 +263,7 @@ struct PaceSettings: View {
           "Your weekly quota is split into seven equal 24-hour buckets. Unused quota carries forward within the week; overspending leaves less for the next bucket."
         )
         Text(
-          "The calendar highlights all dates touched by the week—usually eight. An asterisk marks estimated usage. Values use whole percentages; fractions are kept in the calculation."
+          "Values use whole percentages; fractions are kept in the calculation. Today’s quota can exceed 100% when you have extra headroom."
         )
         Text(
           "Quota history stays on this Mac for 90 days. No model calls are made and reset credits are never redeemed."

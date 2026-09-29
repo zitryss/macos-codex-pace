@@ -14,8 +14,6 @@ Click the gauge in the menu bar. Four bars show today's quota, time until the ne
 
 Today's quota includes surplus or overspending from earlier buckets. It can exceed 100% when you have extra headroom.
 
-The month calendar highlights the dates your week touches—usually eight dates for seven buckets. Stronger blue marks the current bucket, and an outline marks today's calendar date. Click a day for its range and calculation basis. P is Plan; U is Used. Asterisks mean estimated usage, not exact daily consumption.
-
 Readings refresh every five minutes, on wake, and at bucket boundaries. Use the refresh button or ⌘R to check now. Settings lets you choose the weekly quota and, if necessary, locate your Codex CLI. Reset credits are displayed only.
 
 ## Download

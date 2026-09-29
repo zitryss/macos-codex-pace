@@ -10,16 +10,14 @@ final class PacingTests: XCTestCase {
       reset: start.addingTimeInterval(604800), received: start.addingTimeInterval(offset))
   }
   func testFallbackPrecisionAndCarryover() {
-    for (remaining, available, daily, used) in [
-      (86.0, "14", 102.0, "0"), (90, "18", 130, "0"), (80, "8", 60, "5"),
+    for (remaining, available, daily) in [
+      (86.0, "14", 102.0), (90, "18", 130), (80, "8", 60),
     ] {
       let s = snapshot(remaining, at: 87000)
       let p = Pacing.project(s, history: [s], now: s.received)!
       XCTAssertEqual(Pacing.whole(p.available), available)
       XCTAssertEqual(p.dailyPercent!, daily, accuracy: 1e-8)
-      XCTAssertEqual(Pacing.whole(p.records[1].used), used)
       XCTAssertTrue(p.standardPlan)
-      XCTAssertEqual(p.records.compactMap(\.used).reduce(0, +), 100 - remaining, accuracy: 1e-8)
     }
   }
   func testNearBoundarySamplingImprovesWithoutExactTimestamp() {
@@ -27,11 +25,9 @@ final class PacingTests: XCTestCase {
     let current = snapshot(86, at: 88000)
     let p = Pacing.project(current, history: [opening, current], now: current.received)!
     XCTAssertFalse(p.standardPlan)
-    XCTAssertEqual(p.records[1].used, 4)
-    XCTAssertEqual(p.records[1].plan, 130.0 / 7, accuracy: 1e-8)
+    XCTAssertEqual(p.dailyPercent!, 10200.0 / 130, accuracy: 1e-8)
     XCTAssertEqual(
       Pacing.project(opening, history: [opening], now: opening.received)!.dailyPercent, 100)
-    XCTAssertTrue(p.records[1].estimated)
   }
   func testNoLateOpeningAndAccountIsolation() {
     let late = snapshot(90, at: 86461)
@@ -52,35 +48,13 @@ final class PacingTests: XCTestCase {
     XCTAssertEqual(Pacing.whole(100.0 / 7 * 7), "100")
     XCTAssertEqual(Pacing.whole(-1), "—")
   }
-  func testCalendarOverlapAndMidnight() {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(identifier: "Europe/Berlin")!
-    let begin = calendar.date(
-      from: DateComponents(year: 2026, month: 9, day: 12, hour: 10, minute: 26))!
-    let s = QuotaSnapshot(
-      account: "a", bucket: "codex", remaining: 86, reset: begin.addingTimeInterval(604800),
-      received: begin.addingTimeInterval(90000))
-    let p = Pacing.project(s, history: [], now: s.received)
-    let days = PaceCalendar.days(snapshot: s, projection: p, now: s.received, calendar: calendar)
-    XCTAssertEqual(days.filter(\.inWeek).map(\.number), Array(12...19))
-    XCTAssertEqual(days.filter(\.inBucket).map(\.number), [13, 14])
-    XCTAssertEqual(days.flatMap(\.records).count, 7)
-    XCTAssertEqual(days.filter(\.today).count, 1)
-    let midnight = calendar.startOfDay(for: begin)
-    let m = QuotaSnapshot(
-      account: "a", bucket: "codex", remaining: 100, reset: midnight.addingTimeInterval(604800),
-      received: midnight)
-    XCTAssertEqual(
-      PaceCalendar.days(snapshot: m, projection: nil, now: midnight, calendar: calendar).filter(
-        \.inWeek
-      ).count, 7)
-  }
-  func testCorrectionDoesNotInventHistoricalUsage() {
+  func testCorrectionPreservesQuota() {
     let before = snapshot(80, at: 170000)
     let now = snapshot(90, at: 175000)
     let p = Pacing.project(now, history: [before, now], now: now.received)!
     XCTAssertTrue(p.correction)
-    XCTAssertNil(p.records[0].used)
+    XCTAssertEqual(p.weeklyPercent, 90)
+    XCTAssertEqual(p.dailyPercent!, 230, accuracy: 1e-8)
   }
   func testParseRequiresExplicitQuotaChoiceAndValidData() throws {
     let received = Date()
