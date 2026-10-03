@@ -16,3 +16,10 @@ Limitations: near-boundary sampling, 90-day retention and background scheduling 
 - Installed release replaces the debug copy in `~/Applications`; the two extra debug bundles were unregistered and moved to Trash.
 - Captured the actual installed menu bar popover for the README and screenshot issue.
 - No Developer ID signing identity is installed. The download is explicitly labeled ad-hoc signed and not notarized.
+
+## Release 1.3.0 — October 3, 2026
+
+- Nine automated tests passed; the optional live CLI test was skipped.
+- Universal optimized Release app and widget extension built for arm64 and x86_64. Both report version 1.3.0, build 6.
+- Strict recursive code-signature verification and ZIP integrity checks passed; SHA-256 checksum generated.
+- Distribution remains ad-hoc signed and not notarized. Intel binaries were compiled, not executed.
